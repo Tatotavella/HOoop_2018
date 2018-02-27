@@ -1,4 +1,5 @@
 import random
+import matplotlib.pyplot as plt
 
 class Fila(object):
     """Clase base de fila"""
@@ -24,8 +25,10 @@ class FilaPreferencial(Fila):
     def abrircajanueva(self,maxenfila,filanueva):
         """Si maxenfila es menor que la cantidad de clientes actualmente en espera, abro nueva caja"""
         if self.enfila > maxenfila:
-            filanueva = FilaGeneral() # Abro fila nueva, va a ser del tipo FilaGeneral
+            filanueva = FilaPreferencial() # Abro fila nueva preferencial
             return filanueva
+        else:
+            return 0
         
     
 class FilaGeneral(Fila):
@@ -61,14 +64,16 @@ class Cliente(object):
     
 if __name__ == "__main__":
     """ simular una fila en una entidad bancaria"""
-    fila_general = FilaGeneral()
-    fila_preferencial = FilaPreferencial()
     # Array de clientes
-    lista_dni = [random.randint(10000000,99999999) for x in range(10)]
+    # Total de clientes disponibles
+    tot_clientes = 60
+    lista_dni = [random.randint(10000000,99999999) for x in range(tot_clientes)]
     clientes_arr = []
     # Armo lista de clientes y asigno al azar Generales y Preferenciales
-    # Uso 80% Generales y 20% Preferenciales
-    proba_gen = 0.8
+    # Probabilidad de generar clientes de categoria General
+    # 1 - proba_gen es la probabilidad de generarl clientes de categoria Preferencial
+    proba_gen = 0.5
+    #print('Lista de Clientes:')
     for dni in lista_dni:
         cl = Cliente(dni)
         moneda = random.uniform(0,1)
@@ -77,7 +82,73 @@ if __name__ == "__main__":
         else:
             cl.modificarcategoria('Preferencial')
         clientes_arr.append(cl)
-    print(clientes_arr)
+        #print(cl)
+    # Inicializacion de filas
+    fila_general = FilaGeneral()
+    fila_preferencial = FilaPreferencial()
+    fila_nueva = FilaGeneral()
+    # Serie temporal de gente en cada fila
+    gen_data = []
+    pref_data = []
+    # Tiempo de atencion fila general
+    t_aten_gen = 7
+    # Tiempo de atencion fila preferencial
+    t_aten_pref = 5
+    # Pasos totales de simulacion
+    N = 100
+    # Cantidad maxima de clientes en fila Preferencial
+    maxenfila = 5
+    # Tiempo de entrada a fila - A cada paso (por ahora)
+    step = 1
+    t_gen = 1
+    t_pref = 1
+    indice_cliente = 0
+    while(step < N):
+        # Ingreso a la fila si hay clientes disponibles
+        if indice_cliente < tot_clientes:
+            cl = clientes_arr[indice_cliente]
+            cat = cl.categoria
+            if cat == 'General':
+                # Fila general
+                fila_general.insertar(cl)
+            elif cat == 'Preferencial':
+                # Fila preferencial
+                fila_preferencial.insertar(cl)
+        # Egreso de la fila si hay clientes en la fila
+        # General
+        if fila_general.enfila > 0:
+            if t_gen > t_aten_gen:
+                fila_general.atender()
+                t_gen = 1
+            else:
+                t_gen += 1
+        # Preferencial
+        if fila_preferencial.enfila > 0:
+            if t_pref > t_aten_pref:
+                fila_preferencial.atender()
+                t_pref = 1
+            else:
+                t_pref += 1
+
+        # Fila nueva
+        fila_nueva = fila_preferencial.abrircajanueva(maxenfila,fila_nueva)
+        if fila_nueva != 0:
+            # Ingresos y egresos de fila nueva
+            pass
+        else:
+            pass
+
+        # Guardo data
+        gen_data.append(fila_general.enfila)
+        pref_data.append(fila_preferencial.enfila)
+        indice_cliente += 1
+        step += 1
+       
+    plt.plot(gen_data,'o', label = 'Gente en fila general')
+    plt.plot(pref_data,'o', label = 'Gente en fila preferencial')
+    plt.legend()
+    plt.show()
+    '''
     cl_1 = Cliente('37786375')
     cl_1.modificarcategoria('General')
     print('Cliente: %s | Categoria: %s ' % (cl_1.dni,cl_1.categoria))
@@ -88,3 +159,4 @@ if __name__ == "__main__":
     print('Fila General: Cantidad de Personas: %d' % (fila_gral_1.enfila))
     print('Lista de personas: %s' % (fila_gral_1.fila))
     pass
+    '''
